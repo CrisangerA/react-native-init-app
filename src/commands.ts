@@ -32,7 +32,7 @@ class CleanCommandHandler implements CommandHandler {
       return this.cleanAll(onStepChange);
     }
 
-    return this.cleanSingle(selectedClean.script);
+    return this.cleanSingle(selectedClean.script, onStepChange);
   }
 
   private async cleanAll(
@@ -47,41 +47,78 @@ class CleanCommandHandler implements CommandHandler {
 
     for (let i = 0; i < steps.length; i++) {
       onStepChange?.(i, steps.length, steps[i].message);
-      await execa("npm", ["run", steps[i].script]);
+      await this.runStreamed("npm", ["run", steps[i].script], onStepChange, i, steps.length);
     }
 
     onStepChange?.(steps.length, steps.length, "All cleaned!");
     return { success: true, output: "✅ All caches cleaned successfully!" };
   }
 
-  private async cleanSingle(script: string): Promise<CommandResult> {
-    await execa("npm", ["run", script], { stdio: "inherit", cleanup: true });
+  private async cleanSingle(script: string, onStepChange?: ProgressCallback): Promise<CommandResult> {
+    await this.runStreamed("npm", ["run", script], onStepChange, 0, 1);
     return { success: true, output: "✅ Command completed successfully!" };
+  }
+
+  private async runStreamed(
+    cmd: string,
+    args: string[],
+    onStepChange?: ProgressCallback,
+    step: number = 0,
+    total: number = 1
+  ): Promise<void> {
+    const childProcess = execa(cmd, args, { cleanup: true });
+    
+    childProcess.stdout?.on("data", (data) => {
+      onStepChange?.(step, total, "", data.toString());
+    });
+    childProcess.stderr?.on("data", (data) => {
+      onStepChange?.(step, total, "", data.toString());
+    });
+
+    await childProcess;
   }
 }
 
 class PodInstallHandler implements CommandHandler {
-  async execute(): Promise<CommandResult> {
-    const result = await execa("npm", ["run", "pod-install"], {
-      stdio: "inherit",
-      cleanup: true,
+  async execute(
+    _?: string,
+    onStepChange?: ProgressCallback
+  ): Promise<CommandResult> {
+    const childProcess = execa("npm", ["run", "pod-install"], { cleanup: true });
+
+    childProcess.stdout?.on("data", (data) => {
+      onStepChange?.(0, 1, "Running pod install...", data.toString());
     });
+    childProcess.stderr?.on("data", (data) => {
+      onStepChange?.(0, 1, "Running pod install...", data.toString());
+    });
+
+    await childProcess;
     return {
       success: true,
-      output: result.stdout || "✅ Command completed successfully!",
+      output: "✅ Command completed successfully!",
     };
   }
 }
 
 class RunAndroidHandler implements CommandHandler {
-  async execute(): Promise<CommandResult> {
-    const result = await execa("npm", ["run", "android"], {
-      stdio: "inherit",
-      cleanup: true,
+  async execute(
+    _?: string,
+    onStepChange?: ProgressCallback
+  ): Promise<CommandResult> {
+    const childProcess = execa("npm", ["run", "android"], { cleanup: true });
+
+    childProcess.stdout?.on("data", (data) => {
+      onStepChange?.(0, 1, "Running on Android...", data.toString());
     });
+    childProcess.stderr?.on("data", (data) => {
+      onStepChange?.(0, 1, "Running on Android...", data.toString());
+    });
+
+    await childProcess;
     return {
       success: true,
-      output: result.stdout || "✅ Command completed successfully!",
+      output: "✅ Command completed successfully!",
     };
   }
 }

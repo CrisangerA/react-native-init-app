@@ -31,5 +31,6 @@ export interface PromptResult {
 export type ProgressCallback = (
   step: number,
   total: number,
-  message: string
+  message: string,
+  log?: string
 ) => void;

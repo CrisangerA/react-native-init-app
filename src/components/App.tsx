@@ -35,10 +35,18 @@ export const App: React.FC<AppProps> = ({
   const [showSteps, setShowSteps] = useState(false);
 
   const handleStepChange = useCallback(
-    (step: number, total: number, message: string) => {
+    (step: number, total: number, message: string, log?: string) => {
       setCurrentStep(step);
       setTotalSteps(total);
-      setStepMessage(message);
+      if (message) setStepMessage(message);
+      if (log) {
+        setOutput((prev) => {
+          const newOutput = prev + log;
+          const lines = newOutput.split("\n");
+          // Limit to last 10 lines to keep UI stable
+          return lines.slice(-10).join("\n");
+        });
+      }
     },
     []
   );
@@ -48,6 +56,9 @@ export const App: React.FC<AppProps> = ({
       setShowSteps(true);
       const executeScaffold = async () => {
         try {
+          // Clear output for new command
+          setOutput("");
+          
           const downloadResult = await downloadTemplate({
             projectName: scaffoldData.projectName,
             onProgress: (msg) => handleStepChange(0, 7, msg),
@@ -67,7 +78,11 @@ export const App: React.FC<AppProps> = ({
 
           await cleanupTempDir(downloadResult.tempDir);
 
-          setOutput(result.output);
+          if (!result.success && result.error) {
+            setOutput(`❌ Error during scaffold: ${result.error}`);
+          } else {
+            setOutput(result.output);
+          }
           setStatus(result.success ? "success" : "error");
         } catch (err) {
           setOutput(err instanceof Error ? err.message : String(err));
@@ -160,7 +175,7 @@ Examples:
     <Box
       flexDirection="column"
       padding={1}
-      borderStyle="round"
+      borderStyle="classic"
       borderColor="cyan"
     >
       <Box>
@@ -194,7 +209,13 @@ Examples:
         <Text bold color="gray">
           Output:
         </Text>
-        <Box marginTop={1} padding={1} borderStyle="single" borderColor="gray">
+        <Box
+          marginTop={1}
+          padding={1}
+          borderStyle="double"
+          borderColor="gray"
+          minHeight={18}
+        >
           <Text>{output || (status === "running" ? "Processing..." : "")}</Text>
         </Box>
       </Box>

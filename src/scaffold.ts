@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { execa } from "execa";
 import { PM_COMMANDS } from "./constants.js";
 
 const FILES_TO_COPY = [
@@ -33,7 +34,7 @@ export interface ScaffoldOptions {
   installDeps: boolean;
   podInstall: boolean;
   templatePath: string;
-  onProgress?: (step: number, total: number, message: string) => void;
+  onProgress?: (step: number, total: number, message: string, log?: string) => void;
 }
 
 async function pathExists(filePath: string) {
@@ -75,12 +76,30 @@ export async function scaffoldProject(
     (podInstall && process.platform === "darwin" ? 1 : 0);
   let step = 0;
 
+  const runStreamed = async (
+    cmd: string,
+    args: string[],
+    currentStep: number,
+    message: string,
+    cwd?: string
+  ) => {
+    const childProcess = execa(cmd, args, { cwd: cwd || process.cwd(), cleanup: true });
+
+    childProcess.stdout?.on("data", (data) => {
+      onProgress?.(currentStep, totalSteps, message, data.toString());
+    });
+    childProcess.stderr?.on("data", (data) => {
+      onProgress?.(currentStep, totalSteps, message, data.toString());
+    });
+
+    return childProcess;
+  };
+
   try {
-    onProgress?.(step++, totalSteps, "Initializing React Native project...");
+    const initMessage = "Initializing React Native project...";
+    onProgress?.(step, totalSteps, initMessage);
 
-    const { execa } = await import("execa");
-
-    await execa(
+    await runStreamed(
       "npx",
       [
         "@react-native-community/cli",
@@ -92,7 +111,9 @@ export async function scaffoldProject(
         bundleId,
         "--skip-install",
       ],
-      { stdio: "inherit" }
+      step++,
+      initMessage
+      // No cwd here, run in current dir
     );
 
     onProgress?.(step++, totalSteps, "Cleaning up default files...");
@@ -139,9 +160,10 @@ export async function scaffoldProject(
     appJson.displayName = projectName;
     await writeJson(appJsonPath, appJson);
 
-    onProgress?.(step++, totalSteps, "Configuring git...");
+    onProgress?.(step, totalSteps, "Configuring git...");
 
     try {
+      await execa("git", ["init"], { cwd: projectDir });
       await execa("git", ["add", "."], { cwd: projectDir });
       await execa(
         "git",
@@ -151,27 +173,20 @@ export async function scaffoldProject(
     } catch {
       // Git skipped if not available
     }
+    step++;
 
     if (installDeps) {
       const pm = PM_COMMANDS[packageManager as keyof typeof PM_COMMANDS];
-      onProgress?.(
-        step++,
-        totalSteps,
-        `Installing dependencies (${packageManager})...`
-      );
+      const installMessage = `Installing dependencies (${packageManager})...`;
+      onProgress?.(step, totalSteps, installMessage);
 
       const [cmd, ...args] = pm.install.split(" ");
-      await execa(cmd, args, {
-        cwd: projectDir,
-        stdio: "inherit",
-      });
+      await runStreamed(cmd, args, step++, installMessage, projectDir);
 
       if (podInstall && process.platform === "darwin") {
-        onProgress?.(step++, totalSteps, "Running pod install...");
-        await execa("npm", ["run", "pod-install"], {
-          cwd: projectDir,
-          stdio: "inherit",
-        });
+        const podMessage = "Running pod install...";
+        onProgress?.(step, totalSteps, podMessage);
+        await runStreamed("npm", ["run", "pod-install"], step++, podMessage, projectDir);
       }
     }
 
