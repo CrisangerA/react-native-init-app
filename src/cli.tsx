@@ -18,7 +18,7 @@ import { scaffoldProject } from "./scaffold.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const RN_VERSION = "0.84.0";
 
 const PM_COMMANDS = {
@@ -113,7 +113,7 @@ function validateDirectory(value: string) {
 }
 
 function printHeader() {
-  console.log(chalk.cyan("\n⚡ React Native Init App\n"));
+  console.log(chalk.cyan("\n⚡ Create React Native Init App\n"));
   console.log(
     chalk.dim("Create React Native projects with Clean Architecture\n")
   );
@@ -466,16 +466,18 @@ const App: React.FC<{
       runScaffold();
     } else if (command === "version") {
       setOutput(`
-⚡ React Native Init App
+⚡ Create React Native Init App
 Version: ${VERSION}
 React Native Template: ${RN_VERSION}
 
 Usage:
-  npx react-native-init-app
-  bunx react-native-init-app
+  npm init react-native-init-app
+  bun init react-native-init-app
+  npx create-react-native-init-app
+  bunx create-react-native-init-app
   rnia
 
-Run 'react-native-init-app --help' for more information.
+Run 'create-react-native-init-app --help' for more information.
 `);
       setStatus("success");
     } else if (command === "help") {
@@ -493,13 +495,14 @@ Run 'react-native-init-app --help' for more information.
 🤖  run-android - Run app on Android device/emulator
 
 Usage:
-  npx react-native-init-app
-  bunx react-native-init-app
+  npm init react-native-init-app
+  npx create-react-native-init-app
+  bunx create-react-native-init-app
   rnia
 
 Examples:
-  npx react-native-init-app
-  bunx react-native-init-app --help
+  npm init react-native-init-app
+  bunx create-react-native-init-app --help
 `);
       setStatus("success");
     } else {
@@ -551,7 +554,7 @@ Examples:
     >
       <Box>
         <Text bold color="cyan">
-          ⚡ React Native Init App
+          ⚡ Create React Native Init App
         </Text>
       </Box>
       <Spacer />

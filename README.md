@@ -1,31 +1,37 @@
-# React Native Init App
+# Create React Native Init App
 
 Interactive CLI tool to scaffold React Native projects with Clean Architecture.
 
-## Installation
+## Installation & Usage
 
-### Using npx (recommended)
+### The Easiest Way (Automatic)
+
+You can initialize a new project directly without installing the CLI globally:
 
 ```bash
-npx react-native-init-app
+npm init react-native-init-app
+# or
+bun init react-native-init-app
 ```
 
-### Using bunx
+### Using npx or bunx
 
 ```bash
-bunx react-native-init-app
+npx create-react-native-init-app
+# or
+bunx create-react-native-init-app
 ```
 
-### Using npm
+### Global Installation
+
+If you prefer to have the commands available everywhere:
 
 ```bash
-npm create react-native-init-app
-```
+npm install -g create-react-native-init-app
 
-### Using the short alias
-
-```bash
+# Now you can use the following commands:
 rnia
+react-native-init-app
 ```
 
 ## Features
@@ -40,9 +46,9 @@ rnia
 
 ```bash
 # Interactive mode
-npx react-native-init-app
+npx create-react-native-init-app
 
-# Short alias
+# Short alias (after global install)
 rnia
 ```
 
