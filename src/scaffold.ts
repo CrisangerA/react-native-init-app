@@ -100,7 +100,7 @@ export async function scaffoldProject(
     onProgress?.(step, totalSteps, initMessage);
 
     await runStreamed(
-      "npx",
+      PM_COMMANDS[packageManager].exec,
       [
         "@react-native-community/cli",
         "init",
@@ -186,7 +186,7 @@ export async function scaffoldProject(
       if (podInstall && process.platform === "darwin") {
         const podMessage = "Running pod install...";
         onProgress?.(step, totalSteps, podMessage);
-        await runStreamed("npm", ["run", "pod-install"], step++, podMessage, projectDir);
+        await runStreamed(cmd, ["run", "pod-install"], step++, podMessage, projectDir);
       }
     }
 

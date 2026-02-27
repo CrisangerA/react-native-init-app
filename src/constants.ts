@@ -4,10 +4,10 @@ export const VERSION = "1.0.1";
 export const RN_VERSION = "0.84.0";
 
 export const PM_COMMANDS = {
-  npm: { install: "npm install", run: (script: string) => `npm run ${script}` },
-  yarn: { install: "yarn install", run: (script: string) => `yarn ${script}` },
-  pnpm: { install: "pnpm install", run: (script: string) => `pnpm ${script}` },
-  bun: { install: "bun install", run: (script: string) => `bun run ${script}` },
+  npm: { install: "npm install", run: (script: string) => `npm run ${script}`, pm: "npm", exec: "npx" },
+  yarn: { install: "yarn install", run: (script: string) => `yarn ${script}`, pm: "yarn", exec: "yarn" },
+  pnpm: { install: "pnpm install", run: (script: string) => `pnpm ${script}`, pm: "pnpm", exec: "pnpm" },
+  bun: { install: "bun install", run: (script: string) => `bun run ${script}`, pm: "bun", exec: "bunx" },
 };
 
 export const PROGRESS_BAR_WIDTH = 20;

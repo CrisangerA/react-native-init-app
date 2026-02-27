@@ -28,29 +28,42 @@ async function confirmAction(message: string): Promise<boolean> {
 }
 
 async function promptScaffoldData(): Promise<PromptResult> {
+  // 1. Get project name first to use it as a base for other defaults
   const { projectName } = await enquirer.prompt<{ projectName: string }>({
-    type: "text",
+    type: "input",
     name: "projectName",
     message: "What is the name of your project?",
     initial: "MyApp",
     validate: validateProjectName,
   });
 
-  const { bundleId } = await enquirer.prompt<{ bundleId: string }>({
-    type: "text",
-    name: "bundleId",
-    message: "What is the bundle identifier?",
-    initial: `com.company.${projectName.toLowerCase()}`,
-    validate: validateBundleId,
+  // 2. Use Form for remaining text inputs with dynamic defaults
+  const { formData } = await enquirer.prompt<{
+    formData: {
+      bundleId: string;
+      directory: string;
+    };
+  }>({
+    type: "form",
+    name: "formData",
+    message: "Please provide the project configuration:",
+    choices: [
+      {
+        name: "bundleId",
+        message: "Bundle Identifier",
+        initial: `com.company.${projectName.toLowerCase()}`,
+        validate: validateBundleId,
+      },
+      {
+        name: "directory",
+        message: "Target Directory",
+        initial: path.resolve(process.cwd(), projectName),
+        validate: validateDirectory,
+      },
+    ],
   });
 
-  const { directory } = await enquirer.prompt<{ directory: string }>({
-    type: "text",
-    name: "directory",
-    message: "Where should the project be created?",
-    initial: path.resolve(process.cwd(), projectName),
-    validate: validateDirectory,
-  });
+  const { bundleId, directory } = formData;
 
   const { packageManager } = await enquirer.prompt<{
     packageManager: string;
@@ -67,18 +80,15 @@ async function promptScaffoldData(): Promise<PromptResult> {
     initial: 3,
   });
 
-  const { installDeps } = await enquirer.prompt<{ installDeps: boolean }>({
-    type: "confirm",
-    name: "installDeps",
-    message: "Do you want to install dependencies after setup?",
-    initial: true,
-  });
-
-  const { podInstall } = await enquirer.prompt<{ podInstall: boolean }>({
-    type: "confirm",
-    name: "podInstall",
-    message: "Do you want to run pod install for iOS? (macOS only)",
-    initial: true,
+  const { options } = await enquirer.prompt<{ options: string[] }>({
+    type: "multiselect",
+    name: "options",
+    message: "Select additional setup steps:",
+    hint: "(Press <space> to select, <return> to submit, or just <enter> to skip all)",
+    choices: [
+      { name: "installDeps", message: "Install dependencies" },
+      { name: "podInstall", message: "Run pod install (iOS)" },
+    ],
   });
 
   return {
@@ -88,8 +98,8 @@ async function promptScaffoldData(): Promise<PromptResult> {
       bundleId,
       directory,
       packageManager,
-      installDeps,
-      podInstall,
+      installDeps: options.includes("installDeps"),
+      podInstall: options.includes("podInstall"),
     },
   };
 }
