@@ -1,7 +1,7 @@
-import fetch from "node-fetch";
-import fs from "fs-extra";
-import path from "path";
-import os from "os";
+import fs from "node:fs";
+import fsPromises from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
 import tar from "tar";
 
 const TEMPLATE_REPO = "CrisangerA/react-native-template";
@@ -25,7 +25,7 @@ export async function downloadTemplate(
 ): Promise<DownloadResult> {
   const { projectName, branch = TEMPLATE_BRANCH, onProgress } = options;
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "rnia-"));
+  const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "rnia-"));
   const tarballPath = path.join(tempDir, "template.tar.gz");
   const extractPath = path.join(tempDir, "template");
 
@@ -42,18 +42,25 @@ export async function downloadTemplate(
       );
     }
 
-    const fileStream = fs.createWriteStream(tarballPath);
+    if (!response.body) {
+      throw new Error("Response body is empty");
+    }
 
-    // @ts-ignore - node-fetch body is readable stream
-    for await (const chunk of response.body) {
-      fileStream.write(chunk);
+    const fileStream = fs.createWriteStream(tarballPath);
+    // @ts-ignore - response.body is a ReadableStream in Node 22
+    const reader = response.body.getReader();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      fileStream.write(value);
     }
 
     fileStream.end();
 
     onProgress?.("📦 Extracting template...");
 
-    await fs.ensureDir(extractPath);
+    await fsPromises.mkdir(extractPath, { recursive: true });
 
     await tar.extract({
       file: tarballPath,
@@ -80,7 +87,9 @@ export async function downloadTemplate(
     };
   } catch (error) {
     // Cleanup on error
-    fs.removeSync(tempDir);
+    try {
+      await fsPromises.rm(tempDir, { recursive: true, force: true });
+    } catch {}
 
     return {
       success: false,
@@ -93,7 +102,7 @@ export async function downloadTemplate(
 
 export async function cleanupTempDir(tempDir: string): Promise<void> {
   try {
-    await fs.remove(tempDir);
+    await fsPromises.rm(tempDir, { recursive: true, force: true });
   } catch (error) {
     console.warn("Failed to cleanup temp directory:", error);
   }

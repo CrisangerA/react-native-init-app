@@ -10,16 +10,14 @@ You can initialize a new project directly without installing the CLI globally:
 
 ```bash
 npm init react-native-init-app
-# or
-bun init react-native-init-app
 ```
 
 ### Using npx or bunx
 
 ```bash
-npx create-react-native-init-app
-# or
 bunx create-react-native-init-app
+# or
+npx create-react-native-init-app
 ```
 
 ### Global Installation

@@ -1,5 +1,5 @@
-import fs from "fs-extra";
-import path from "path";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const FILES_TO_COPY = [
   ".opencode",
@@ -40,6 +40,24 @@ export interface ScaffoldOptions {
   podInstall: boolean;
   templatePath: string;
   onProgress?: (step: number, total: number, message: string) => void;
+}
+
+async function pathExists(filePath: string) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readJson(filePath: string) {
+  const content = await fs.readFile(filePath, "utf-8");
+  return JSON.parse(content);
+}
+
+async function writeJson(filePath: string, data: any) {
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
 }
 
 export async function scaffoldProject(
@@ -87,8 +105,8 @@ export async function scaffoldProject(
 
     for (const file of FILES_TO_DELETE) {
       const filePath = path.join(projectDir, file);
-      if (await fs.pathExists(filePath)) {
-        await fs.remove(filePath);
+      if (await pathExists(filePath)) {
+        await fs.rm(filePath, { recursive: true, force: true });
       }
     }
 
@@ -97,18 +115,18 @@ export async function scaffoldProject(
     for (const file of FILES_TO_COPY) {
       const srcPath = path.join(templatePath, file);
       const destPath = path.join(projectDir, file);
-      if (await fs.pathExists(srcPath)) {
-        await fs.copy(srcPath, destPath);
+      if (await pathExists(srcPath)) {
+        await fs.cp(srcPath, destPath, { recursive: true });
       }
     }
 
     onProgress?.(step++, totalSteps, "Merging package.json...");
 
-    const templatePackageJson = await fs.readJson(
+    const templatePackageJson = await readJson(
       path.join(templatePath, "package.json")
     );
     const newPackageJsonPath = path.join(projectDir, "package.json");
-    const newPackageJson = await fs.readJson(newPackageJsonPath);
+    const newPackageJson = await readJson(newPackageJsonPath);
 
     const mergedPackageJson = {
       ...newPackageJson,
@@ -119,13 +137,13 @@ export async function scaffoldProject(
       scripts: templatePackageJson.scripts,
     };
 
-    await fs.writeJson(newPackageJsonPath, mergedPackageJson, { spaces: 2 });
+    await writeJson(newPackageJsonPath, mergedPackageJson);
 
     const appJsonPath = path.join(projectDir, "app.json");
-    const appJson = await fs.readJson(appJsonPath);
+    const appJson = await readJson(appJsonPath);
     appJson.name = projectName;
     appJson.displayName = projectName;
-    await fs.writeJson(appJsonPath, appJson, { spaces: 2 });
+    await writeJson(appJsonPath, appJson);
 
     onProgress?.(step++, totalSteps, "Configuring git...");
 
