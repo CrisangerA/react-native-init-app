@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { PM_COMMANDS } from "./constants.js";
 
 const FILES_TO_COPY = [
   ".opencode",
@@ -23,13 +24,6 @@ const FILES_TO_COPY = [
 ];
 
 const FILES_TO_DELETE = ["App.tsx", "src", "__tests__"];
-
-const PM_COMMANDS = {
-  npm: { install: "npm install", run: (script: string) => `npm run ${script}` },
-  yarn: { install: "yarn install", run: (script: string) => `yarn ${script}` },
-  pnpm: { install: "pnpm install", run: (script: string) => `pnpm ${script}` },
-  bun: { install: "bun install", run: (script: string) => `bun run ${script}` },
-};
 
 export interface ScaffoldOptions {
   projectName: string;

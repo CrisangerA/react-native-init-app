@@ -1,0 +1,174 @@
+import chalk from "chalk";
+import enquirer from "enquirer";
+import path from "path";
+
+import type { PromptResult } from "./types.js";
+import { CLEAN_OPTIONS } from "./constants.js";
+import {
+  validateProjectName,
+  validateBundleId,
+  validateDirectory,
+} from "./validators.js";
+
+function printHeader(): void {
+  console.log(chalk.cyan("\n⚡ Create React Native Init App\n"));
+  console.log(
+    chalk.dim("Create React Native projects with Clean Architecture\n")
+  );
+}
+
+async function confirmAction(message: string): Promise<boolean> {
+  const { confirmed } = await enquirer.prompt<{ confirmed: boolean }>({
+    type: "confirm",
+    name: "confirmed",
+    message,
+    initial: false,
+  });
+  return confirmed;
+}
+
+async function promptScaffoldData(): Promise<PromptResult> {
+  const { projectName } = await enquirer.prompt<{ projectName: string }>({
+    type: "text",
+    name: "projectName",
+    message: "What is the name of your project?",
+    initial: "MyApp",
+    validate: validateProjectName,
+  });
+
+  const { bundleId } = await enquirer.prompt<{ bundleId: string }>({
+    type: "text",
+    name: "bundleId",
+    message: "What is the bundle identifier?",
+    initial: `com.company.${projectName.toLowerCase()}`,
+    validate: validateBundleId,
+  });
+
+  const { directory } = await enquirer.prompt<{ directory: string }>({
+    type: "text",
+    name: "directory",
+    message: "Where should the project be created?",
+    initial: path.resolve(process.cwd(), projectName),
+    validate: validateDirectory,
+  });
+
+  const { packageManager } = await enquirer.prompt<{
+    packageManager: string;
+  }>({
+    type: "select",
+    name: "packageManager",
+    message: "Which package manager do you want to use?",
+    choices: [
+      { name: "npm", message: "npm" },
+      { name: "yarn", message: "Yarn" },
+      { name: "pnpm", message: "pnpm" },
+      { name: "bun", message: "Bun" },
+    ],
+    initial: 3,
+  });
+
+  const { installDeps } = await enquirer.prompt<{ installDeps: boolean }>({
+    type: "confirm",
+    name: "installDeps",
+    message: "Do you want to install dependencies after setup?",
+    initial: true,
+  });
+
+  const { podInstall } = await enquirer.prompt<{ podInstall: boolean }>({
+    type: "confirm",
+    name: "podInstall",
+    message: "Do you want to run pod install for iOS? (macOS only)",
+    initial: true,
+  });
+
+  return {
+    command: "scaffold",
+    scaffoldData: {
+      projectName,
+      bundleId,
+      directory,
+      packageManager,
+      installDeps,
+      podInstall,
+    },
+  };
+}
+
+async function promptCleanOption(): Promise<PromptResult> {
+  const { cleanOption } = await enquirer.prompt<{ cleanOption: string }>({
+    type: "select",
+    name: "cleanOption",
+    message: "🧹  What do you want to clean?",
+    choices: CLEAN_OPTIONS.map((opt) => ({
+      name: opt.label,
+      message: opt.label + (opt.destructive ? " ⚠️" : ""),
+    })),
+  });
+
+  const selectedOption = CLEAN_OPTIONS.find((opt) => opt.label === cleanOption);
+
+  if (selectedOption?.destructive) {
+    const confirmed = await confirmAction(
+      `⚠️  This will delete ${
+        cleanOption === "All" ? "all caches" : cleanOption
+      }. Are you sure?`
+    );
+    if (!confirmed) {
+      return runPrompt();
+    }
+  }
+
+  return { command: "clean", cleanOption };
+}
+
+export async function runPrompt(): Promise<PromptResult> {
+  printHeader();
+
+  const { command } = await enquirer.prompt<{ command: string }>({
+    type: "select",
+    name: "command",
+    message: "Select a command:",
+    choices: [
+      {
+        name: "scaffold",
+        message: "🚀 Create New Project",
+        hint: "Create new project from template",
+      },
+      {
+        name: "clean",
+        message: "🧹  Clean",
+        hint: "Clean caches and build folders",
+      },
+      {
+        name: "pod-install",
+        message: "📦  Pod Install",
+        hint: "Install CocoaPods dependencies",
+      },
+      {
+        name: "run-android",
+        message: "🤖  Run Android",
+        hint: "Run app on Android device/emulator",
+      },
+      {
+        name: "version",
+        message: "ℹ️  Version",
+        hint: "Show CLI version and info",
+      },
+      {
+        name: "help",
+        message: "❓  Help",
+        hint: "Show available commands",
+      },
+    ],
+  });
+
+  if (command === "scaffold") {
+    return promptScaffoldData();
+  }
+
+  if (command === "clean") {
+    return promptCleanOption();
+  }
+
+  return { command };
+}
