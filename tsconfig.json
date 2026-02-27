@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ESNext"],
     "jsx": "react",
     "strict": false,
     "esModuleInterop": true,
@@ -11,10 +11,12 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "outDir": "./dist",
+    "outDir": "./bin",
     "rootDir": "./src",
-    "types": ["node"]
+    "declaration": false,
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*", "bin/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "bin", "dist"]
 }
